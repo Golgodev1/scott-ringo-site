@@ -1,0 +1,43 @@
+# /admin/config.yml
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "audio"
+public_folder: "/audio"
+
+collections:
+  - name: "projects"
+    label: "Projects"
+    folder: "content/projects"
+    create: true
+    format: "json"
+    slug: "{{slug}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Year", name: "year", widget: "string" }
+      - { label: "Role", name: "role", widget: "string", required: false }
+      - { label: "Description", name: "description", widget: "text", required: false }
+      - { label: "Audio", name: "audio", widget: "file", required: false }
+
+  - name: "site"
+    label: "Site"
+    files:
+      - file: "content/site/about.json"
+        label: "About"
+        name: "about"
+        format: "json"
+        fields:
+          - { label: "Kicker", name: "kicker", widget: "string", default: "ABOUT" }
+          - { label: "Title", name: "title", widget: "string", default: "SCOTT RINGO" }
+          - { label: "Copy", name: "copy", widget: "text" }
+
+      - file: "content/site/contact.json"
+        label: "Contact"
+        name: "contact"
+        format: "json"
+        fields:
+          - { label: "Kicker", name: "kicker", widget: "string", default: "CONTACT" }
+          - { label: "Title", name: "title", widget: "string", default: "GET IN TOUCH" }
+          - { label: "Copy", name: "copy", widget: "text" }
