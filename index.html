@@ -27,7 +27,7 @@
     <main class="main-grid">
       <aside class="sidebar">
         <nav class="nav">
-          <button class="nav-link is-active" data-view="about">ABOUT</button>
+          <button class="nav-link" data-view="about">ABOUT</button>
           <button class="nav-link" data-view="contact">CONTACT</button>
         </nav>
       </aside>
@@ -36,55 +36,20 @@
         <div class="content-stage">
           <div class="content-stage__inner is-visible" id="contentStage">
             <div class="stage-kicker" id="stageKicker">SELECTED WORK</div>
-            <h2 class="stage-title" id="stageTitle">FILM SCORE</h2>
-            <div class="stage-meta" id="stageMeta">
-              <span id="stageRole">Composition / Scoring</span>
-              <span>•</span>
-              <span id="stageYear">2021</span>
+            <h2 class="stage-title" id="stageTitle">LOADING</h2>
+            <div class="stage-meta" id="stageMeta" style="display:none;">
+              <span id="stageRole"></span>
+              <span id="stageMetaSep">•</span>
+              <span id="stageYear"></span>
             </div>
-            <p class="stage-copy" id="stageCopy">Cinematic composition work for trailers, titles, and narrative visual media.</p>
-            <button class="load-button" id="loadTrackBtn">LOAD IN PLAYER</button>
+            <p class="stage-copy" id="stageCopy">Loading content…</p>
+            <button class="load-button" id="loadTrackBtn" style="display:none;">LOAD IN PLAYER</button>
           </div>
         </div>
 
         <div class="project-list" id="workView">
           <div class="section-label">SELECTED PROJECTS:</div>
-
-          <button
-            class="project-row is-active"
-            data-title="FILM SCORE"
-            data-year="2021"
-            data-role="Composition / Scoring"
-            data-description="Cinematic composition work for trailers, titles, and narrative visual media."
-            data-audio="audio/film-score.mp3"
-          >
-            <span class="project-title">FILM SCORE</span>
-            <span class="project-year">2021</span>
-          </button>
-
-          <button
-            class="project-row"
-            data-title="ADVERTISING"
-            data-year="2022"
-            data-role="Audio Post / Brand Sound"
-            data-description="Premium sound design and polished mix work for commercials and branded campaigns."
-            data-audio="audio/advertising.mp3"
-          >
-            <span class="project-title">ADVERTISING</span>
-            <span class="project-year">2022</span>
-          </button>
-
-          <button
-            class="project-row"
-            data-title="SOUND ART"
-            data-year="2020"
-            data-role="Installation / Experimental"
-            data-description="Textural, spatial, and installation-based sonic work with an experimental edge."
-            data-audio="audio/sound-art.mp3"
-          >
-            <span class="project-title">SOUND ART</span>
-            <span class="project-year">2020</span>
-          </button>
+          <div id="projectRows"></div>
         </div>
       </section>
     </main>
@@ -92,12 +57,12 @@
     <footer class="player-bar">
       <button id="playBtn" class="player-icon" aria-label="Play">▶</button>
       <button class="player-icon" aria-label="Next">⏭</button>
-      <div class="time" id="currentTime">0:20</div>
+      <div class="time" id="currentTime">0:00</div>
       <div class="scrub-wrap">
         <div class="scrub-rail"></div>
-        <input id="progress" type="range" min="0" max="100" step="0.1" value="18">
+        <input id="progress" type="range" min="0" max="100" step="0.1" value="0">
       </div>
-      <div class="time" id="duration">3:25</div>
+      <div class="time" id="duration">0:00</div>
       <button class="player-icon menu-icon" id="infoBtn" aria-label="Current selection">☰</button>
       <audio id="audio"></audio>
     </footer>
