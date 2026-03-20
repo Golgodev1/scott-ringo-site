@@ -99,6 +99,7 @@ function renderProjects() {
   projects.forEach((project, index) => {
     const button = document.createElement("button");
     button.className = "project-row";
+
     if (selectedProject && selectedProject.slug === project.slug) {
       button.classList.add("is-active");
     }
@@ -235,11 +236,6 @@ progress.addEventListener("input", () => {
   }
 });
 
-/**
- * Load all CMS-driven content.
- * Add more project filenames here as you create them,
- * unless you later switch to a generated manifest.
- */
 async function loadContent() {
   aboutContent = await fetchJson("/content/site/about.json");
   contactContent = await fetchJson("/content/site/contact.json");
@@ -252,13 +248,13 @@ async function loadContent() {
   }));
 
   if (projects.length === 0) {
+    renderProjects();
     swapStage({
       kicker: "SELECTED WORK",
       title: "NO PROJECTS YET",
       copy: "Add a project in the CMS.",
       showLoad: false
     });
-    renderProjects();
     return;
   }
 
@@ -266,4 +262,5 @@ async function loadContent() {
   renderProjects();
   updateProjectSelection(selectedProject);
 }
+
 loadContent();
