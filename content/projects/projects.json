@@ -1,0 +1,12 @@
+{
+  "projects": [
+    {
+      "title": "Film Score",
+      "year": "2024",
+      "role": "Composer / Sound Design",
+      "description": "Project description here.",
+      "audio": "/audio/your-file.mp3",
+      "slug": "film-score"
+    }
+  ]
+}
