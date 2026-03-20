@@ -244,25 +244,21 @@ async function loadContent() {
   aboutContent = await fetchJson("/content/site/about.json");
   contactContent = await fetchJson("/content/site/contact.json");
 
-  const projectFiles = [
-    "/content/projects/film-score.json"
-  ];
+  const projectsData = await fetchJson("/content/projects.json");
 
-  const loadedProjects = await Promise.all(projectFiles.map((file) => fetchJson(file)));
-  projects = loadedProjects
-    .filter(Boolean)
-    .map((project, index) => ({
-      ...project,
-      slug: project.slug || `project-${index + 1}`
-    }));
+  projects = (projectsData?.projects || []).map((project, index) => ({
+    ...project,
+    slug: project.slug || `project-${index + 1}`
+  }));
 
   if (projects.length === 0) {
     swapStage({
       kicker: "SELECTED WORK",
       title: "NO PROJECTS YET",
-      copy: "Add a project in the CMS and redeploy.",
+      copy: "Add a project in the CMS.",
       showLoad: false
     });
+    renderProjects();
     return;
   }
 
@@ -270,5 +266,4 @@ async function loadContent() {
   renderProjects();
   updateProjectSelection(selectedProject);
 }
-
 loadContent();
