@@ -2,5 +2,6 @@
   "title": "Test project",
   "year": "2020",
   "role": "Composer",
-  "description": "test"
+  "description": "test",
+  "audio": "/audio/jazzclub.wav"
 }
