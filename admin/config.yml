@@ -1,4 +1,3 @@
-# /admin/config.yml
 backend:
   name: git-gateway
   branch: main
@@ -26,27 +25,6 @@ collections:
               - { label: "Description", name: "description", widget: "text", required: false }
               - { label: "Audio", name: "audio", widget: "file", required: false }
               - { label: "Slug", name: "slug", widget: "string", required: false }
-
-  - name: "site"
-    label: "Site"
-    files:
-      - file: "content/site/about.json"
-        label: "About"
-        name: "about"
-        format: "json"
-        fields:
-          - { label: "Kicker", name: "kicker", widget: "string", default: "ABOUT" }
-          - { label: "Title", name: "title", widget: "string", default: "SCOTT RINGO" }
-          - { label: "Copy", name: "copy", widget: "text" }
-
-      - file: "content/site/contact.json"
-        label: "Contact"
-        name: "contact"
-        format: "json"
-        fields:
-          - { label: "Kicker", name: "kicker", widget: "string", default: "CONTACT" }
-          - { label: "Title", name: "title", widget: "string", default: "GET IN TOUCH" }
-          - { label: "Copy", name: "copy", widget: "text" }
 
   - name: "site"
     label: "Site"
