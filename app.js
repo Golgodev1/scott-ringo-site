@@ -7,7 +7,6 @@ const nextBtn = document.getElementById("nextBtn");
 const progress = document.getElementById("progress");
 const currentTimeEl = document.getElementById("currentTime");
 const durationEl = document.getElementById("duration");
-const infoBtn = document.getElementById("infoBtn");
 const nowPlaying = document.getElementById("nowPlaying");
 const eqCanvas = document.getElementById("eqVisualizer");
 const eqCtx = eqCanvas ? eqCanvas.getContext("2d") : null;
@@ -128,65 +127,81 @@ function sizeCanvas() {
 
   const dpr = window.devicePixelRatio || 1;
   const rect = eqCanvas.getBoundingClientRect();
-  const width = Math.max(1, Math.floor(rect.width * dpr));
-  const height = Math.max(1, Math.floor(rect.height * dpr));
+  const width = Math.max(1, Math.round(rect.width * dpr));
+  const height = Math.max(1, Math.round(rect.height * dpr));
 
   if (eqCanvas.width !== width || eqCanvas.height !== height) {
     eqCanvas.width = width;
     eqCanvas.height = height;
   }
+
+  eqCtx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
-function drawIdleVisualizer() {
-  if (!eqCanvas || !eqCtx) return;
-
-  sizeCanvas();
-
+function getVisualizerGrid() {
   const w = eqCanvas.width;
   const h = eqCanvas.height;
 
   const cols = 120;
   const rows = 4;
-  const gap = Math.max(1, Math.floor(w * 0.0015));
-  const cellW = Math.max(4, Math.floor((w - gap * (cols - 1)) / cols));
-  const cellH = Math.max(5, Math.floor((h - gap * (rows - 1)) / rows));
+  const gap = Math.max(1, Math.round(w * 0.0015));
+
+  const totalGapWidth = gap * (cols - 1);
+  const totalGapHeight = gap * (rows - 1);
+
+  const cellW = Math.max(1, (w - totalGapWidth) / cols);
+  const cellH = Math.max(1, (h - totalGapHeight) / rows);
+
+  return { w, h, cols, rows, gap, cellW, cellH };
+}
+
+function drawGrid(activeRowCounts = null) {
+  if (!eqCanvas || !eqCtx) return;
+
+  sizeCanvas();
+
+  const { w, h, cols, rows, gap, cellW, cellH } = getVisualizerGrid();
 
   eqCtx.clearRect(0, 0, w, h);
   eqCtx.fillStyle = "#ffffff";
   eqCtx.fillRect(0, 0, w, h);
 
   for (let c = 0; c < cols; c++) {
-    for (let r = 0; r < rows; r++) {
-      const x = c * (cellW + gap);
-      const y = h - ((r + 1) * cellH + r * gap);
+    const x = c * (cellW + gap);
+    const activeRows = activeRowCounts ? activeRowCounts[c] || 0 : 0;
 
-      eqCtx.fillStyle = "rgba(0, 0, 0, 0.10)";
-      eqCtx.fillRect(x, y, cellW, cellH);
+    for (let r = 0; r < rows; r++) {
+      const y = h - cellH - r * (cellH + gap);
+      const isActive = r < activeRows;
+
+      eqCtx.fillStyle = isActive ? "#000000" : "rgba(0, 0, 0, 0.10)";
+
+      const drawX = Math.round(x);
+      const drawY = Math.round(y);
+      const drawW = Math.max(1, Math.ceil(cellW));
+      const drawH = Math.max(1, Math.ceil(cellH));
+
+      eqCtx.fillRect(drawX, drawY, drawW, drawH);
     }
   }
+
+  eqCtx.fillStyle = "#ffffff";
+  eqCtx.fillRect(Math.max(0, w - 1), 0, 1, h);
+}
+
+function drawIdleVisualizer() {
+  drawGrid();
 }
 
 function drawVisualizer() {
   if (!eqCanvas || !eqCtx || !analyser || !frequencyData) return;
 
-  sizeCanvas();
-
-  const w = eqCanvas.width;
-  const h = eqCanvas.height;
-
-  const cols = 120;
-  const rows = 4;
-  const gap = Math.max(1, Math.floor(w * 0.0015));
-  const cellW = Math.max(4, Math.floor((w - gap * (cols - 1)) / cols));
-  const cellH = Math.max(5, Math.floor((h - gap * (rows - 1)) / rows));
+  const { cols, rows } = getVisualizerGrid();
 
   analyser.getByteFrequencyData(frequencyData);
 
-  eqCtx.clearRect(0, 0, w, h);
-  eqCtx.fillStyle = "#ffffff";
-  eqCtx.fillRect(0, 0, w, h);
-
   const bucketSize = Math.max(1, Math.floor(frequencyData.length / cols));
+  const activeRowCounts = new Array(cols).fill(0);
 
   for (let c = 0; c < cols; c++) {
     let sum = 0;
@@ -199,18 +214,18 @@ function drawVisualizer() {
 
     const avg = end > start ? sum / (end - start) : 0;
     const normalized = avg / 255;
-    const activeRows = Math.max(1, Math.round(normalized * rows));
 
-    for (let r = 0; r < rows; r++) {
-      const x = c * (cellW + gap);
-      const y = h - ((r + 1) * cellH + r * gap);
-      const isActive = r < activeRows;
+    let activeRows = Math.round(normalized * rows);
 
-      eqCtx.fillStyle = isActive ? "#000000" : "rgba(0, 0, 0, 0.10)";
-      eqCtx.fillRect(x, y, cellW, cellH);
+    if (avg < 8) {
+      activeRows = 0;
     }
+
+    activeRows = Math.max(0, Math.min(rows, activeRows));
+    activeRowCounts[c] = activeRows;
   }
 
+  drawGrid(activeRowCounts);
   visualizerFrame = window.requestAnimationFrame(drawVisualizer);
 }
 
@@ -379,14 +394,6 @@ navLinks.forEach((link) => {
     if (view === "about") showAbout();
     if (view === "contact") showContact();
   });
-});
-
-infoBtn?.addEventListener("click", () => {
-  if (loadedProject) {
-    updateProjectSelection(loadedProject);
-  } else if (selectedProject) {
-    updateProjectSelection(selectedProject);
-  }
 });
 
 loadTrackBtn?.addEventListener("click", () => {
