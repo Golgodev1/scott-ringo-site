@@ -1,0 +1,11 @@
+{
+  "projects": [
+    {
+      "title": "Film Scoring",
+      "year": "2005",
+      "role": "Composer",
+      "description": "This is a test",
+      "audio": "/audio/jazzclub.wav"
+    }
+  ]
+}
