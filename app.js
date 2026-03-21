@@ -171,7 +171,7 @@ function drawVisualizer() {
     if (avg < 8) normalized = 0;
 
     const rise = 0.6;
-    const fall = 0.05;
+    const fall = 0.03;
 
     if (normalized > smoothedLevels[c]) {
       smoothedLevels[c] += (normalized - smoothedLevels[c]) * rise;
