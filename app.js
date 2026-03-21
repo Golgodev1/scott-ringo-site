@@ -2,10 +2,13 @@ const body = document.body;
 const themeToggle = document.getElementById("themeToggle");
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
+const playIcon = document.getElementById("playIcon");
+const nextBtn = document.getElementById("nextBtn");
 const progress = document.getElementById("progress");
 const currentTimeEl = document.getElementById("currentTime");
 const durationEl = document.getElementById("duration");
 const infoBtn = document.getElementById("infoBtn");
+const nowPlaying = document.getElementById("nowPlaying");
 
 const navLinks = document.querySelectorAll(".nav-link");
 const projectRowsContainer = document.getElementById("projectRows");
@@ -24,6 +27,7 @@ let projects = [];
 let aboutContent = null;
 let contactContent = null;
 let selectedProject = null;
+let loadedProject = null;
 let pendingAudio = "";
 let currentView = "work";
 
@@ -58,6 +62,70 @@ function formatTime(value) {
 function setTheme(theme) {
   body.dataset.theme = theme;
   localStorage.setItem("scott-ringo-theme", theme);
+}
+
+function setPlayIcon(isPlaying) {
+  if (!playIcon) return;
+
+  playIcon.innerHTML = isPlaying
+    ? `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="7" y="5" width="4" height="14"></rect>
+        <rect x="13" y="5" width="4" height="14"></rect>
+      </svg>
+    `
+    : `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <polygon points="8,5 19,12 8,19"></polygon>
+      </svg>
+    `;
+}
+
+function updateNowPlayingLabel() {
+  if (!nowPlaying) return;
+
+  if (loadedProject && loadedProject.title) {
+    nowPlaying.textContent = loadedProject.title.toUpperCase();
+  } else {
+    nowPlaying.textContent = "NO TRACK LOADED";
+  }
+}
+
+function setLoadedProject(project) {
+  loadedProject = project || null;
+  updateNowPlayingLabel();
+}
+
+function loadProjectTrack(project, autoPlay = false) {
+  if (!project || !project.audio) return;
+
+  setLoadedProject(project);
+  pendingAudio = project.audio || "";
+
+  audio.pause();
+  audio.src = project.audio;
+  audio.load();
+
+  currentTimeEl.textContent = "0:00";
+  durationEl.textContent = "0:00";
+  progress.value = 0;
+  setPlayIcon(false);
+
+  if (autoPlay) {
+    audio.addEventListener(
+      "canplay",
+      async function handleAutoPlay() {
+        audio.removeEventListener("canplay", handleAutoPlay);
+        try {
+          await audio.play();
+          setPlayIcon(true);
+        } catch (error) {
+          console.error("Playback failed", error);
+        }
+      },
+      { once: true }
+    );
+  }
 }
 
 const savedTheme = localStorage.getItem("scott-ringo-theme");
@@ -177,27 +245,21 @@ navLinks.forEach((link) => {
 });
 
 infoBtn.addEventListener("click", () => {
-  if (selectedProject) {
+  if (loadedProject) {
+    updateProjectSelection(loadedProject);
+  } else if (selectedProject) {
     updateProjectSelection(selectedProject);
   }
 });
 
 loadTrackBtn.addEventListener("click", () => {
-  if (!pendingAudio) return;
-
-  audio.pause();
-  audio.src = pendingAudio;
-  audio.load();
-  playBtn.textContent = "▶";
-  currentTimeEl.textContent = "0:00";
-  durationEl.textContent = "0:00";
-  progress.value = 0;
+  if (!selectedProject || !selectedProject.audio) return;
+  loadProjectTrack(selectedProject, false);
 });
 
 playBtn.addEventListener("click", async () => {
-  if (!audio.src && pendingAudio) {
-    audio.src = pendingAudio;
-    audio.load();
+  if (!audio.src && selectedProject && selectedProject.audio) {
+    loadProjectTrack(selectedProject, false);
   }
 
   if (!audio.src) return;
@@ -205,15 +267,34 @@ playBtn.addEventListener("click", async () => {
   if (audio.paused) {
     try {
       await audio.play();
-      playBtn.textContent = "❚❚";
+      setPlayIcon(true);
     } catch (error) {
       console.error("Playback failed", error);
     }
   } else {
     audio.pause();
-    playBtn.textContent = "▶";
+    setPlayIcon(false);
   }
 });
+
+if (nextBtn) {
+  nextBtn.addEventListener("click", () => {
+    if (!projects.length) return;
+
+    const currentIndex = loadedProject
+      ? projects.findIndex((project) => project.slug === loadedProject.slug)
+      : projects.findIndex((project) => selectedProject && project.slug === selectedProject.slug);
+
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = (safeIndex + 1) % projects.length;
+    const nextProject = projects[nextIndex];
+
+    if (!nextProject || !nextProject.audio) return;
+
+    updateProjectSelection(nextProject);
+    loadProjectTrack(nextProject, true);
+  });
+}
 
 audio.addEventListener("loadedmetadata", () => {
   durationEl.textContent = formatTime(audio.duration);
@@ -227,7 +308,15 @@ audio.addEventListener("timeupdate", () => {
 });
 
 audio.addEventListener("ended", () => {
-  playBtn.textContent = "▶";
+  setPlayIcon(false);
+});
+
+audio.addEventListener("pause", () => {
+  setPlayIcon(false);
+});
+
+audio.addEventListener("play", () => {
+  setPlayIcon(true);
 });
 
 progress.addEventListener("input", () => {
@@ -249,18 +338,22 @@ async function loadContent() {
 
   if (projects.length === 0) {
     renderProjects();
+    setLoadedProject(null);
     swapStage({
       kicker: "SELECTED WORK",
       title: "NO PROJECTS YET",
       copy: "Add a project in the CMS.",
       showLoad: false
     });
+    setPlayIcon(false);
     return;
   }
 
   selectedProject = projects[0];
   renderProjects();
   updateProjectSelection(selectedProject);
+  setLoadedProject(null);
+  setPlayIcon(false);
 }
 
 loadContent();
