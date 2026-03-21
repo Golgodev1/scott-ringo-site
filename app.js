@@ -125,22 +125,34 @@ function drawIdleVisualizer() {
 
   const width = eqCanvas.width;
   const height = eqCanvas.height;
-  const barCount = 12;
-  const gap = Math.max(2, Math.floor(width * 0.015));
-  const barWidth = Math.max(3, Math.floor((width - gap * (barCount - 1)) / barCount));
-  const baseHeight = Math.max(3, Math.floor(height * 0.16));
-  const totalWidth = barCount * barWidth + (barCount - 1) * gap;
-  const startX = Math.floor((width - totalWidth) / 2);
+
+  const cols = 12;
+  const rows = 4;
+  const gap = Math.max(2, Math.floor(width * 0.01));
+  const cellSize = Math.floor(
+    Math.min(
+      (width - gap * (cols - 1)) / cols,
+      (height - gap * (rows - 1)) / rows
+    )
+  );
+
+  const gridWidth = cols * cellSize + (cols - 1) * gap;
+  const gridHeight = rows * cellSize + (rows - 1) * gap;
+  const startX = Math.floor((width - gridWidth) / 2);
+  const startY = Math.floor((height - gridHeight) / 2);
 
   eqCtx.clearRect(0, 0, width, height);
-  eqCtx.fillStyle = "#000000";
+  eqCtx.fillStyle = "#ffffff";
   eqCtx.fillRect(0, 0, width, height);
 
-  for (let i = 0; i < barCount; i++) {
-    const x = startX + i * (barWidth + gap);
-    const y = height - baseHeight;
-    eqCtx.fillStyle = "rgba(255, 255, 255, 0.22)";
-    eqCtx.fillRect(x, y, barWidth, baseHeight);
+  for (let col = 0; col < cols; col++) {
+    for (let row = 0; row < rows; row++) {
+      const x = startX + col * (cellSize + gap);
+      const y = startY + (rows - 1 - row) * (cellSize + gap);
+
+      eqCtx.fillStyle = "rgba(0, 0, 0, 0.12)";
+      eqCtx.fillRect(x, y, cellSize, cellSize);
+    }
   }
 }
 
