@@ -9,6 +9,8 @@ const currentTimeEl = document.getElementById("currentTime");
 const durationEl = document.getElementById("duration");
 const infoBtn = document.getElementById("infoBtn");
 const nowPlaying = document.getElementById("nowPlaying");
+const eqCanvas = document.getElementById("eqVisualizer");
+const eqCtx = eqCanvas ? eqCanvas.getContext("2d") : null;
 
 const navLinks = document.querySelectorAll(".nav-link");
 const projectRowsContainer = document.getElementById("projectRows");
@@ -30,6 +32,12 @@ let selectedProject = null;
 let loadedProject = null;
 let pendingAudio = "";
 let currentView = "work";
+
+let audioContext = null;
+let analyser = null;
+let sourceNode = null;
+let frequencyData = null;
+let visualizerFrame = null;
 
 /**
  * Safely fetch JSON and return null if missing.
@@ -96,6 +104,131 @@ function setLoadedProject(project) {
   updateNowPlayingLabel();
 }
 
+function sizeVisualizerCanvas() {
+  if (!eqCanvas || !eqCtx) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = eqCanvas.getBoundingClientRect();
+  const width = Math.max(1, Math.floor(rect.width * dpr));
+  const height = Math.max(1, Math.floor(rect.height * dpr));
+
+  if (eqCanvas.width !== width || eqCanvas.height !== height) {
+    eqCanvas.width = width;
+    eqCanvas.height = height;
+  }
+}
+
+function drawIdleVisualizer() {
+  if (!eqCanvas || !eqCtx) return;
+
+  sizeVisualizerCanvas();
+
+  const width = eqCanvas.width;
+  const height = eqCanvas.height;
+  const barCount = 12;
+  const gap = Math.max(2, Math.floor(width * 0.015));
+  const barWidth = Math.max(3, Math.floor((width - gap * (barCount - 1)) / barCount));
+  const baseHeight = Math.max(3, Math.floor(height * 0.16));
+  const totalWidth = barCount * barWidth + (barCount - 1) * gap;
+  const startX = Math.floor((width - totalWidth) / 2);
+
+  eqCtx.clearRect(0, 0, width, height);
+  eqCtx.fillStyle = "#000000";
+  eqCtx.fillRect(0, 0, width, height);
+
+  for (let i = 0; i < barCount; i++) {
+    const x = startX + i * (barWidth + gap);
+    const y = height - baseHeight;
+    eqCtx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    eqCtx.fillRect(x, y, barWidth, baseHeight);
+  }
+}
+
+async function ensureAudioContext() {
+  if (!eqCanvas || !eqCtx) return;
+
+  if (!audioContext) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    audioContext = new AudioContextClass();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 64;
+    analyser.smoothingTimeConstant = 0.82;
+
+    sourceNode = audioContext.createMediaElementSource(audio);
+    sourceNode.connect(analyser);
+    analyser.connect(audioContext.destination);
+
+    frequencyData = new Uint8Array(analyser.frequencyBinCount);
+  }
+
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+}
+
+function drawVisualizer() {
+  if (!eqCanvas || !eqCtx || !analyser || !frequencyData) return;
+
+  sizeVisualizerCanvas();
+
+  const width = eqCanvas.width;
+  const height = eqCanvas.height;
+  const barCount = 12;
+  const gap = Math.max(2, Math.floor(width * 0.015));
+  const barWidth = Math.max(3, Math.floor((width - gap * (barCount - 1)) / barCount));
+  const totalWidth = barCount * barWidth + (barCount - 1) * gap;
+  const startX = Math.floor((width - totalWidth) / 2);
+
+  analyser.getByteFrequencyData(frequencyData);
+
+  eqCtx.clearRect(0, 0, width, height);
+  eqCtx.fillStyle = "#000000";
+  eqCtx.fillRect(0, 0, width, height);
+
+  const bucketSize = Math.max(1, Math.floor(frequencyData.length / barCount));
+
+  for (let i = 0; i < barCount; i++) {
+    let sum = 0;
+    const start = i * bucketSize;
+    const end = Math.min(start + bucketSize, frequencyData.length);
+
+    for (let j = start; j < end; j++) {
+      sum += frequencyData[j];
+    }
+
+    const avg = end > start ? sum / (end - start) : 0;
+    const normalized = avg / 255;
+    const minBarHeight = Math.max(4, Math.floor(height * 0.12));
+    const maxBarHeight = Math.floor(height * 0.92);
+    const barHeight = Math.max(minBarHeight, Math.floor(normalized * maxBarHeight));
+
+    const x = startX + i * (barWidth + gap);
+    const y = height - barHeight;
+
+    eqCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    eqCtx.fillRect(x, y, barWidth, barHeight);
+  }
+
+  visualizerFrame = window.requestAnimationFrame(drawVisualizer);
+}
+
+function startVisualizer() {
+  if (visualizerFrame) {
+    window.cancelAnimationFrame(visualizerFrame);
+  }
+  drawVisualizer();
+}
+
+function stopVisualizer() {
+  if (visualizerFrame) {
+    window.cancelAnimationFrame(visualizerFrame);
+    visualizerFrame = null;
+  }
+  drawIdleVisualizer();
+}
+
 function loadProjectTrack(project, autoPlay = false) {
   if (!project || !project.audio) return;
 
@@ -110,6 +243,7 @@ function loadProjectTrack(project, autoPlay = false) {
   durationEl.textContent = "0:00";
   progress.value = 0;
   setPlayIcon(false);
+  stopVisualizer();
 
   if (autoPlay) {
     audio.addEventListener(
@@ -117,6 +251,7 @@ function loadProjectTrack(project, autoPlay = false) {
       async function handleAutoPlay() {
         audio.removeEventListener("canplay", handleAutoPlay);
         try {
+          await ensureAudioContext();
           await audio.play();
           setPlayIcon(true);
         } catch (error) {
@@ -266,6 +401,7 @@ playBtn.addEventListener("click", async () => {
 
   if (audio.paused) {
     try {
+      await ensureAudioContext();
       await audio.play();
       setPlayIcon(true);
     } catch (error) {
@@ -278,7 +414,7 @@ playBtn.addEventListener("click", async () => {
 });
 
 if (nextBtn) {
-  nextBtn.addEventListener("click", () => {
+  nextBtn.addEventListener("click", async () => {
     if (!projects.length) return;
 
     const currentIndex = loadedProject
@@ -291,6 +427,7 @@ if (nextBtn) {
 
     if (!nextProject || !nextProject.audio) return;
 
+    await ensureAudioContext();
     updateProjectSelection(nextProject);
     loadProjectTrack(nextProject, true);
   });
@@ -309,19 +446,30 @@ audio.addEventListener("timeupdate", () => {
 
 audio.addEventListener("ended", () => {
   setPlayIcon(false);
+  stopVisualizer();
 });
 
 audio.addEventListener("pause", () => {
   setPlayIcon(false);
+  stopVisualizer();
 });
 
 audio.addEventListener("play", () => {
   setPlayIcon(true);
+  startVisualizer();
 });
 
 progress.addEventListener("input", () => {
   if (audio.duration) {
     audio.currentTime = (Number(progress.value) / 100) * audio.duration;
+  }
+});
+
+window.addEventListener("resize", () => {
+  if (audio && !audio.paused) {
+    startVisualizer();
+  } else {
+    drawIdleVisualizer();
   }
 });
 
@@ -346,6 +494,7 @@ async function loadContent() {
       showLoad: false
     });
     setPlayIcon(false);
+    drawIdleVisualizer();
     return;
   }
 
@@ -354,6 +503,7 @@ async function loadContent() {
   updateProjectSelection(selectedProject);
   setLoadedProject(null);
   setPlayIcon(false);
+  drawIdleVisualizer();
 }
 
 loadContent();
