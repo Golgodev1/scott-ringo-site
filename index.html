@@ -55,44 +55,51 @@
     </main>
 
    <footer class="player-bar">
-  <button id="playBtn" class="player-icon" aria-label="Play">
-    <span id="playIcon" class="icon-svg">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <polygon points="8,5 19,12 8,19"></polygon>
-      </svg>
-    </span>
-  </button>
+  <div class="player-top">
+    <div class="player-now-playing" id="nowPlaying">NO TRACK LOADED</div>
+    <canvas id="eqVisualizer" class="eq-visualizer" aria-hidden="true"></canvas>
 
-  <button id="nextBtn" class="player-icon" aria-label="Next">
-    <span class="icon-svg">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <polygon points="5,5 14,12 5,19"></polygon>
-        <polygon points="12,5 21,12 12,19"></polygon>
-      </svg>
-    </span>
-  </button>
-
-  <div class="player-now-playing" id="nowPlaying">NO TRACK LOADED</div>
-     <canvas id="eqVisualizer" class="eq-visualizer" aria-hidden="true"></canvas>
-
-  <div class="time" id="currentTime">0:00</div>
-
-  <div class="scrub-wrap">
-    <div class="scrub-rail"></div>
-    <input id="progress" type="range" min="0" max="100" step="0.1" value="0">
+    <div class="scrub-wrap">
+      <div class="scrub-rail"></div>
+      <input id="progress" type="range" min="0" max="100" step="0.1" value="0">
+    </div>
   </div>
 
-  <div class="time" id="duration">0:00</div>
+  <div class="player-bottom">
+    <div class="player-controls">
+      <button id="playBtn" class="player-icon" aria-label="Play">
+        <span id="playIcon" class="icon-svg">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <polygon points="8,5 19,12 8,19"></polygon>
+          </svg>
+        </span>
+      </button>
 
-  <button class="player-icon menu-icon" id="infoBtn" aria-label="Current selection">
-    <span class="icon-svg">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="4" y="6" width="16" height="2"></rect>
-        <rect x="4" y="11" width="16" height="2"></rect>
-        <rect x="4" y="16" width="16" height="2"></rect>
-      </svg>
-    </span>
-  </button>
+      <button id="nextBtn" class="player-icon" aria-label="Next">
+        <span class="icon-svg">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <polygon points="5,5 14,12 5,19"></polygon>
+            <polygon points="12,5 21,12 12,19"></polygon>
+          </svg>
+        </span>
+      </button>
+    </div>
+
+    <div class="player-times">
+      <div class="time" id="currentTime">0:00</div>
+      <div class="time" id="duration">0:00</div>
+    </div>
+
+    <button class="player-icon menu-icon" id="infoBtn" aria-label="Current selection">
+      <span class="icon-svg">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4" y="6" width="16" height="2"></rect>
+          <rect x="4" y="11" width="16" height="2"></rect>
+          <rect x="4" y="16" width="16" height="2"></rect>
+        </svg>
+      </span>
+    </button>
+  </div>
 
   <audio id="audio"></audio>
 </footer>
