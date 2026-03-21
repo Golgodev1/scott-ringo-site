@@ -165,8 +165,16 @@ function drawGrid(activeRowCounts = null) {
 
   const { w, h, cols, rows, gap, cellW, cellH } = getVisualizerMetrics();
 
+  const isDark = document.body.dataset.theme === "dark";
+
+  const bgColor = isDark ? "#000000" : "#ffffff";
+  const activeColor = isDark ? "#ffffff" : "#000000";
+  const inactiveColor = isDark
+    ? "rgba(255,255,255,0.12)"
+    : "rgba(0,0,0,0.10)";
+
   eqCtx.clearRect(0, 0, w, h);
-  eqCtx.fillStyle = "#ffffff";
+  eqCtx.fillStyle = bgColor;
   eqCtx.fillRect(0, 0, w, h);
 
   for (let c = 0; c < cols; c++) {
@@ -177,7 +185,7 @@ function drawGrid(activeRowCounts = null) {
       const y = h - cellH - r * (cellH + gap);
       const isActive = r < activeRows;
 
-      eqCtx.fillStyle = isActive ? "#000000" : "rgba(0, 0, 0, 0.10)";
+      eqCtx.fillStyle = isActive ? activeColor : inactiveColor;
 
       const drawX = Math.round(x);
       const drawY = Math.round(y);
@@ -188,7 +196,8 @@ function drawGrid(activeRowCounts = null) {
     }
   }
 
-  eqCtx.fillStyle = "#ffffff";
+  // fix right edge pixel seam
+  eqCtx.fillStyle = bgColor;
   eqCtx.fillRect(Math.max(0, w - 1), 0, 1, h);
 }
 
