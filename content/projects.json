@@ -6,6 +6,13 @@
       "role": "Composer",
       "description": "This is a test",
       "audio": "/audio/jazzclub.wav"
+    },
+    {
+      "title": "Commercial Scoring",
+      "year": "2023",
+      "role": "This is a test 1234",
+      "description": "Testing 1234",
+      "audio": "/audio/this-time-.wav"
     }
   ]
 }
