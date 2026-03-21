@@ -31,7 +31,6 @@ let contactContent = null;
 let selectedProject = null;
 let loadedProject = null;
 let pendingAudio = "";
-let currentView = "work";
 
 let audioContext = null;
 let analyser = null;
@@ -39,27 +38,12 @@ let sourceNode = null;
 let frequencyData = null;
 let visualizerFrame = null;
 
-/**
- * Safely fetch JSON and return null if missing.
- * @param {string} url
- * @returns {Promise<any|null>}
- */
-async function fetchJson(url) {
-  try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch (error) {
-    console.error(`Failed to load ${url}`, error);
-    return null;
-  }
+function fetchJson(url) {
+  return fetch(url, { cache: "no-store" })
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null);
 }
 
-/**
- * Format seconds as M:SS
- * @param {number} value
- * @returns {string}
- */
 function formatTime(value) {
   if (!Number.isFinite(value)) return "0:00";
   const mins = Math.floor(value / 60);
@@ -67,36 +51,16 @@ function formatTime(value) {
   return `${mins}:${secs}`;
 }
 
-function setTheme(theme) {
-  body.dataset.theme = theme;
-  localStorage.setItem("scott-ringo-theme", theme);
-}
-
 function setPlayIcon(isPlaying) {
   if (!playIcon) return;
-
   playIcon.innerHTML = isPlaying
-    ? `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="7" y="5" width="4" height="14"></rect>
-        <rect x="13" y="5" width="4" height="14"></rect>
-      </svg>
-    `
-    : `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <polygon points="8,5 19,12 8,19"></polygon>
-      </svg>
-    `;
+    ? `<svg viewBox="0 0 24 24"><rect x="7" y="5" width="4" height="14"></rect><rect x="13" y="5" width="4" height="14"></rect></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="8,5 19,12 8,19"></polygon></svg>`;
 }
 
 function updateNowPlayingLabel() {
-  if (!nowPlaying) return;
-
-  if (loadedProject && loadedProject.title) {
-    nowPlaying.textContent = loadedProject.title.toUpperCase();
-  } else {
-    nowPlaying.textContent = "NO TRACK LOADED";
-  }
+  nowPlaying.textContent =
+    loadedProject?.title?.toUpperCase() || "NO TRACK LOADED";
 }
 
 function setLoadedProject(project) {
@@ -104,350 +68,167 @@ function setLoadedProject(project) {
   updateNowPlayingLabel();
 }
 
-function sizeVisualizerCanvas() {
-  if (!eqCanvas || !eqCtx) return;
-
-  const dpr = window.devicePixelRatio || 1;
-  const rect = eqCanvas.getBoundingClientRect();
-  const width = Math.max(1, Math.floor(rect.width * dpr));
-  const height = Math.max(1, Math.floor(rect.height * dpr));
-
-  if (eqCanvas.width !== width || eqCanvas.height !== height) {
-    eqCanvas.width = width;
-    eqCanvas.height = height;
-  }
-}
-
-function drawIdleVisualizer() {
-  if (!eqCanvas || !eqCtx) return;
-
-  sizeVisualizerCanvas();
-
-  const width = eqCanvas.width;
-  const height = eqCanvas.height;
-
-  const cols = 12;
-  const rows = 4;
-  const gap = Math.max(2, Math.floor(width * 0.01));
-  const cellSize = Math.floor(
-    Math.min(
-      (width - gap * (cols - 1)) / cols,
-      (height - gap * (rows - 1)) / rows
-    )
-  );
-
-  const gridWidth = cols * cellSize + (cols - 1) * gap;
-  const gridHeight = rows * cellSize + (rows - 1) * gap;
-  const startX = Math.floor((width - gridWidth) / 2);
-  const startY = Math.floor((height - gridHeight) / 2);
-
-  eqCtx.clearRect(0, 0, width, height);
-  eqCtx.fillStyle = "#ffffff";
-  eqCtx.fillRect(0, 0, width, height);
-
-  for (let col = 0; col < cols; col++) {
-    for (let row = 0; row < rows; row++) {
-      const x = startX + col * (cellSize + gap);
-      const y = startY + (rows - 1 - row) * (cellSize + gap);
-
-      eqCtx.fillStyle = "rgba(0, 0, 0, 0.12)";
-      eqCtx.fillRect(x, y, cellSize, cellSize);
-    }
-  }
-}
-
 async function ensureAudioContext() {
-  if (!eqCanvas || !eqCtx) return;
-
   if (!audioContext) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-
-    audioContext = new AudioContextClass();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    audioContext = new Ctx();
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 64;
-    analyser.smoothingTimeConstant = 0.82;
-
     sourceNode = audioContext.createMediaElementSource(audio);
     sourceNode.connect(analyser);
     analyser.connect(audioContext.destination);
-
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
   }
-
   if (audioContext.state === "suspended") {
     await audioContext.resume();
   }
 }
 
+/* =========================
+   GRID VISUALIZER
+========================= */
+
+function sizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = eqCanvas.getBoundingClientRect();
+  eqCanvas.width = rect.width * dpr;
+  eqCanvas.height = rect.height * dpr;
+}
+
+function drawIdleVisualizer() {
+  if (!eqCanvas) return;
+  sizeCanvas();
+
+  const w = eqCanvas.width;
+  const h = eqCanvas.height;
+
+  const cols = 12;
+  const rows = 4;
+  const gap = 3;
+  const size = Math.min(
+    (w - gap * (cols - 1)) / cols,
+    (h - gap * (rows - 1)) / rows
+  );
+
+  const startX = (w - (cols * size + gap * (cols - 1))) / 2;
+  const startY = (h - (rows * size + gap * (rows - 1))) / 2;
+
+  eqCtx.fillStyle = "#fff";
+  eqCtx.fillRect(0, 0, w, h);
+
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      eqCtx.fillStyle = "rgba(0,0,0,0.1)";
+      eqCtx.fillRect(
+        startX + c * (size + gap),
+        startY + r * (size + gap),
+        size,
+        size
+      );
+    }
+  }
+}
+
 function drawVisualizer() {
-  if (!eqCanvas || !eqCtx || !analyser || !frequencyData) return;
+  if (!analyser) return;
 
-  sizeVisualizerCanvas();
+  sizeCanvas();
 
-  const width = eqCanvas.width;
-  const height = eqCanvas.height;
-  const barCount = 12;
-  const gap = Math.max(2, Math.floor(width * 0.015));
-  const barWidth = Math.max(3, Math.floor((width - gap * (barCount - 1)) / barCount));
-  const totalWidth = barCount * barWidth + (barCount - 1) * gap;
-  const startX = Math.floor((width - totalWidth) / 2);
+  const w = eqCanvas.width;
+  const h = eqCanvas.height;
+
+  const cols = 12;
+  const rows = 4;
+  const gap = 3;
+  const size = Math.min(
+    (w - gap * (cols - 1)) / cols,
+    (h - gap * (rows - 1)) / rows
+  );
+
+  const startX = (w - (cols * size + gap * (cols - 1))) / 2;
+  const startY = (h - (rows * size + gap * (rows - 1))) / 2;
 
   analyser.getByteFrequencyData(frequencyData);
 
-  eqCtx.clearRect(0, 0, width, height);
-  eqCtx.fillStyle = "#000000";
-  eqCtx.fillRect(0, 0, width, height);
+  eqCtx.fillStyle = "#fff";
+  eqCtx.fillRect(0, 0, w, h);
 
-  const bucketSize = Math.max(1, Math.floor(frequencyData.length / barCount));
+  const bucket = Math.floor(frequencyData.length / cols);
 
-  for (let i = 0; i < barCount; i++) {
+  for (let c = 0; c < cols; c++) {
     let sum = 0;
-    const start = i * bucketSize;
-    const end = Math.min(start + bucketSize, frequencyData.length);
-
-    for (let j = start; j < end; j++) {
-      sum += frequencyData[j];
+    for (let i = 0; i < bucket; i++) {
+      sum += frequencyData[c * bucket + i];
     }
 
-    const avg = end > start ? sum / (end - start) : 0;
-    const normalized = avg / 255;
-    const minBarHeight = Math.max(4, Math.floor(height * 0.12));
-    const maxBarHeight = Math.floor(height * 0.92);
-    const barHeight = Math.max(minBarHeight, Math.floor(normalized * maxBarHeight));
+    const level = Math.round((sum / bucket / 255) * rows);
 
-    const x = startX + i * (barWidth + gap);
-    const y = height - barHeight;
+    for (let r = 0; r < rows; r++) {
+      const active = r < level;
 
-    eqCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
-    eqCtx.fillRect(x, y, barWidth, barHeight);
+      eqCtx.fillStyle = active ? "#000" : "rgba(0,0,0,0.1)";
+      eqCtx.fillRect(
+        startX + c * (size + gap),
+        startY + (rows - r - 1) * (size + gap),
+        size,
+        size
+      );
+    }
   }
 
-  visualizerFrame = window.requestAnimationFrame(drawVisualizer);
+  visualizerFrame = requestAnimationFrame(drawVisualizer);
 }
 
 function startVisualizer() {
-  if (visualizerFrame) {
-    window.cancelAnimationFrame(visualizerFrame);
-  }
+  cancelAnimationFrame(visualizerFrame);
   drawVisualizer();
 }
 
 function stopVisualizer() {
-  if (visualizerFrame) {
-    window.cancelAnimationFrame(visualizerFrame);
-    visualizerFrame = null;
-  }
+  cancelAnimationFrame(visualizerFrame);
   drawIdleVisualizer();
 }
 
-function loadProjectTrack(project, autoPlay = false) {
-  if (!project || !project.audio) return;
+/* ========================= */
+
+function loadProjectTrack(project) {
+  if (!project?.audio) return;
 
   setLoadedProject(project);
-  pendingAudio = project.audio || "";
 
   audio.pause();
   audio.src = project.audio;
   audio.load();
 
+  progress.value = 0;
   currentTimeEl.textContent = "0:00";
   durationEl.textContent = "0:00";
-  progress.value = 0;
+
   setPlayIcon(false);
   stopVisualizer();
-
-  if (autoPlay) {
-    audio.addEventListener(
-      "canplay",
-      async function handleAutoPlay() {
-        audio.removeEventListener("canplay", handleAutoPlay);
-        try {
-          await ensureAudioContext();
-          await audio.play();
-          setPlayIcon(true);
-        } catch (error) {
-          console.error("Playback failed", error);
-        }
-      },
-      { once: true }
-    );
-  }
 }
 
-const savedTheme = localStorage.getItem("scott-ringo-theme");
-if (savedTheme) setTheme(savedTheme);
-
-themeToggle.addEventListener("click", () => {
-  setTheme(body.dataset.theme === "dark" ? "light" : "dark");
-});
-
-function setActiveNav(view) {
-  navLinks.forEach((link) => {
-    link.classList.toggle("is-active", link.dataset.view === view);
-  });
-  currentView = view;
-}
-
-function swapStage({ kicker, title, role = "", year = "", copy = "", showLoad = false }) {
-  stage.classList.remove("is-visible");
-
-  window.setTimeout(() => {
-    stageKicker.textContent = kicker;
-    stageTitle.textContent = title;
-    stageRole.textContent = role;
-    stageYear.textContent = year;
-    stageCopy.textContent = copy;
-
-    const hasMeta = Boolean(role || year);
-    stageMeta.style.display = hasMeta ? "flex" : "none";
-    stageMetaSep.style.display = role && year ? "inline" : "none";
-
-    loadTrackBtn.style.display = showLoad ? "inline-block" : "none";
-    stage.classList.add("is-visible");
-  }, 180);
-}
-
-function renderProjects() {
-  projectRowsContainer.innerHTML = "";
-
-  projects.forEach((project, index) => {
-    const button = document.createElement("button");
-    button.className = "project-row";
-
-    if (selectedProject && selectedProject.slug === project.slug) {
-      button.classList.add("is-active");
-    }
-
-    button.dataset.slug = project.slug || "";
-    button.dataset.title = project.title || "";
-    button.dataset.year = project.year || "";
-    button.dataset.role = project.role || "";
-    button.dataset.description = project.description || "";
-    button.dataset.audio = project.audio || "";
-
-    button.innerHTML = `
-      <span class="project-title">${project.title || "UNTITLED"}</span>
-      <span class="project-year">${project.year || ""}</span>
-    `;
-
-    button.addEventListener("click", () => {
-      updateProjectSelection(project);
-    });
-
-    projectRowsContainer.appendChild(button);
-
-    if (index === projects.length - 1) {
-      button.classList.add("last-row");
-    }
-  });
-}
-
-function updateProjectSelection(project) {
-  selectedProject = project;
-  pendingAudio = project.audio || "";
-  currentView = "work";
-  setActiveNav("");
-
-  renderProjects();
-
-  swapStage({
-    kicker: "SELECTED WORK",
-    title: project.title || "UNTITLED",
-    role: project.role || "",
-    year: project.year || "",
-    copy: project.description || "",
-    showLoad: Boolean(project.audio)
-  });
-}
-
-function showAbout() {
-  setActiveNav("about");
-
-  swapStage({
-    kicker: aboutContent?.kicker || "ABOUT",
-    title: aboutContent?.title || "SCOTT RINGO",
-    copy: aboutContent?.copy || "",
-    showLoad: false
-  });
-}
-
-function showContact() {
-  setActiveNav("contact");
-
-  swapStage({
-    kicker: contactContent?.kicker || "CONTACT",
-    title: contactContent?.title || "GET IN TOUCH",
-    copy: contactContent?.copy || "",
-    showLoad: false
-  });
-}
-
-navLinks.forEach((link) => {
-  link.addEventListener("click", () => {
-    const view = link.dataset.view;
-    if (view === "about") showAbout();
-    if (view === "contact") showContact();
-  });
-});
-
-infoBtn.addEventListener("click", () => {
-  if (loadedProject) {
-    updateProjectSelection(loadedProject);
-  } else if (selectedProject) {
-    updateProjectSelection(selectedProject);
-  }
-});
-
-loadTrackBtn.addEventListener("click", () => {
-  if (!selectedProject || !selectedProject.audio) return;
-  loadProjectTrack(selectedProject, false);
-});
+/* ========================= */
 
 playBtn.addEventListener("click", async () => {
-  if (!audio.src && selectedProject && selectedProject.audio) {
-    loadProjectTrack(selectedProject, false);
+  if (!audio.src && selectedProject) {
+    loadProjectTrack(selectedProject);
   }
 
-  if (!audio.src) return;
-
   if (audio.paused) {
-    try {
-      await ensureAudioContext();
-      await audio.play();
-      setPlayIcon(true);
-    } catch (error) {
-      console.error("Playback failed", error);
-    }
+    await ensureAudioContext();
+    await audio.play();
+    setPlayIcon(true);
   } else {
     audio.pause();
     setPlayIcon(false);
   }
 });
 
-if (nextBtn) {
-  nextBtn.addEventListener("click", async () => {
-    if (!projects.length) return;
-
-    const currentIndex = loadedProject
-      ? projects.findIndex((project) => project.slug === loadedProject.slug)
-      : projects.findIndex((project) => selectedProject && project.slug === selectedProject.slug);
-
-    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
-    const nextIndex = (safeIndex + 1) % projects.length;
-    const nextProject = projects[nextIndex];
-
-    if (!nextProject || !nextProject.audio) return;
-
-    await ensureAudioContext();
-    updateProjectSelection(nextProject);
-    loadProjectTrack(nextProject, true);
-  });
-}
-
-audio.addEventListener("loadedmetadata", () => {
-  durationEl.textContent = formatTime(audio.duration);
-});
+audio.addEventListener("play", () => startVisualizer());
+audio.addEventListener("pause", () => stopVisualizer());
+audio.addEventListener("ended", () => stopVisualizer());
 
 audio.addEventListener("timeupdate", () => {
   currentTimeEl.textContent = formatTime(audio.currentTime);
@@ -456,65 +237,35 @@ audio.addEventListener("timeupdate", () => {
   }
 });
 
-audio.addEventListener("ended", () => {
-  setPlayIcon(false);
-  stopVisualizer();
-});
-
-audio.addEventListener("pause", () => {
-  setPlayIcon(false);
-  stopVisualizer();
-});
-
-audio.addEventListener("play", () => {
-  setPlayIcon(true);
-  startVisualizer();
+audio.addEventListener("loadedmetadata", () => {
+  durationEl.textContent = formatTime(audio.duration);
 });
 
 progress.addEventListener("input", () => {
   if (audio.duration) {
-    audio.currentTime = (Number(progress.value) / 100) * audio.duration;
+    audio.currentTime = (progress.value / 100) * audio.duration;
   }
 });
 
-window.addEventListener("resize", () => {
-  if (audio && !audio.paused) {
-    startVisualizer();
-  } else {
-    drawIdleVisualizer();
-  }
-});
+/* ========================= */
 
 async function loadContent() {
   aboutContent = await fetchJson("/content/site/about.json");
   contactContent = await fetchJson("/content/site/contact.json");
 
-  const projectsData = await fetchJson("/content/projects.json");
+  const data = await fetchJson("/content/projects.json");
 
-  projects = (projectsData?.projects || []).map((project, index) => ({
-    ...project,
-    slug: project.slug || `project-${index + 1}`
+  projects = (data?.projects || []).map((p, i) => ({
+    ...p,
+    slug: p.slug || `project-${i}`
   }));
 
-  if (projects.length === 0) {
-    renderProjects();
-    setLoadedProject(null);
-    swapStage({
-      kicker: "SELECTED WORK",
-      title: "NO PROJECTS YET",
-      copy: "Add a project in the CMS.",
-      showLoad: false
-    });
-    setPlayIcon(false);
+  if (!projects.length) {
     drawIdleVisualizer();
     return;
   }
 
   selectedProject = projects[0];
-  renderProjects();
-  updateProjectSelection(selectedProject);
-  setLoadedProject(null);
-  setPlayIcon(false);
   drawIdleVisualizer();
 }
 
