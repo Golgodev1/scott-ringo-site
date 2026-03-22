@@ -46,8 +46,7 @@ a {
 }
 
 .app-shell {
-  width: min(1380px, calc(100vw - 84px));
-  min-height: calc(100vh - 84px);
+
   margin: 42px auto;
   background: var(--surface);
   box-shadow: var(--shadow);
