@@ -391,8 +391,7 @@ a {
 
 @media (max-width: 900px) {
   .app-shell {
-    width: min(860px, calc(100vw - 30px));
-    margin: 15px auto;
+ 
     padding: 22px 18px 0;
     overflow: hidden;
   }
