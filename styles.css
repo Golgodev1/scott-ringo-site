@@ -196,6 +196,15 @@ a {
   text-transform: uppercase;
 }
 
+
+.load-button:hover {
+  background-color:black;
+  font-color:white;
+}
+
+
+
+
 .section-label {
   font-size: 16px;
   line-height: 1;
