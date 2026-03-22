@@ -139,6 +139,7 @@ a {
   display: flex;
   align-items: flex-start;
   padding: 12px 0 24px;
+  min-height: 300px;
 }
 
 .content-stage__inner {
