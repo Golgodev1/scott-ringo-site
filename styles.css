@@ -136,10 +136,9 @@ a {
 }
 
 .content-stage {
-  min-height: 270px;
   display: flex;
-  align-items: flex-end;
-  padding: 12px 0 50px;
+  align-items: flex-start;
+  padding: 12px 0 24px;
 }
 
 .content-stage__inner {
