@@ -10,7 +10,7 @@
 }
 
 body[data-theme="dark"] {
-  --bg: #fff;
+  --bg: #000000;
   --surface: #000000;
   --text: #ffffff;
   --muted: #b8b8b8;
