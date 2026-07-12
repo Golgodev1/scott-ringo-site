@@ -2,10 +2,10 @@
   "projects": [
     {
       "title": "Film Scoring",
-      "year": "2005",
+      "year": "2026",
       "role": "Composer",
-      "description": "This is a test",
-      "audio": "/audio/jazzclub.wav"
+      "description": "Cinematic Trailer ",
+      "audio": "/audio/cinematic-score_1.mp3"
     },
     {
       "title": "Commercial Scoring",
