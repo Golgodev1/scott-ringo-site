@@ -3,19 +3,19 @@
     {
       "title": "Film Trailer Score 1",
       "year": "2026",
-      "role": "Composer",
-      "description": "Cinematic Trailer ",
-      "audio": "/audio/cinematic-score_1.mp3"
+      "audio": "/audio/cinematic-trailer_3.mp3"
     },
     {
       "title": "Film Trailer Score 2",
       "year": "2026",
-      "audio": "/audio/cinematic-trailer_3.mp3"
+      "audio": "/audio/cinematic-trailer_2.mp3"
     },
     {
       "title": "Film Trailer Score 3",
       "year": "2026",
-      "audio": "/audio/cinematic-trailer_2.mp3"
+      "role": "Composer",
+      "description": "Cinematic Trailer ",
+      "audio": "/audio/cinematic-score_1.mp3"
     }
   ]
 }
