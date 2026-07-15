@@ -1,31 +1,21 @@
 {
   "projects": [
     {
-      "title": "Film Trailer Scoring",
+      "title": "Film Trailer Score 1",
       "year": "2026",
       "role": "Composer",
       "description": "Cinematic Trailer ",
       "audio": "/audio/cinematic-score_1.mp3"
     },
     {
-      "title": "Commercial Scoring",
-      "year": "2023",
-      "role": "This is a test 1234",
-      "description": "Testing 1234",
-      "audio": "/audio/this-time-.wav"
+      "title": "Film Trailer Score 2",
+      "year": "2026",
+      "audio": "/audio/cinematic-trailer_3.mp3"
     },
     {
-      "title": "B test 1",
+      "title": "Film Trailer Score 3",
       "year": "2026",
-      "role": "Master",
-      "description": "this is a test may 17 ",
-      "audio": "/audio/jazzclub.wav"
-    },
-    {
-      "title": "music",
-      "year": "2026",
-      "description": "music",
-      "audio": "/audio/psychsoul.mp3"
+      "audio": "/audio/cinematic-trailer_2.mp3"
     }
   ]
 }
